@@ -1,0 +1,9 @@
+version: '3.1'
+
+services:
+  app:
+    build: .
+    command: python3 /app/app.py
+    container_name: 'app'
+    ports:
+      - 9000:9000
