@@ -1,9 +1,11 @@
-import falcon
 from collections import deque
 from collections import defaultdict
 from datetime import datetime
 from datetime import timedelta
 from ipaddress import IPv4Address
+from ipaddress import IPv4Network
+
+import falcon
 from wsgiref import simple_server
 
 import config
@@ -27,7 +29,9 @@ class AntiBotFilter:
     def process_request(self, req, resp):
         ip_address = IPv4Address(req.access_route[0])
         req_time = datetime.now()
-        nw_address = '{ip_address}/{ip_mask}'.format(ip_address=ip_address.compressed, ip_mask=self._ip_mask)
+        nw_address = IPv4Network(
+            "{ip_address}/{ip_mask}".format(ip_address=ip_address.compressed, ip_mask=self._ip_mask), strict=False,
+        )
         limiting_req_time = self._ip_networks[nw_address].responses[0]
         limiting_req_timedelta = req_time - limiting_req_time
         self._ip_networks[nw_address].responses.append(req_time)
@@ -39,28 +43,31 @@ class ExampleResource:
     def on_post(self, req, resp):
         pass
 
+    def on_get(self, req, resp):
+        pass
+
+    def on_put(self, req, resp):
+        pass
+
+    def on_delete(self, req, resp):
+        pass
+
 
 def create_app(limiting_req_n, limiting_period, ip_mask):
-    anti_bot_filter = AntiBotFilter(
-        limiting_req_n=limiting_req_n,
-        limiting_period=limiting_period,
-        ip_mask=ip_mask
-    )
+    anti_bot_filter = AntiBotFilter(limiting_req_n=limiting_req_n, limiting_period=limiting_period, ip_mask=ip_mask)
 
     resource = ExampleResource()
 
     api = falcon.API(middleware=[anti_bot_filter])
-    api.add_route('/', resource)
+    api.add_route("/", resource)
     return api
 
 
-if __name__ == '__main__':
-    host = '0.0.0.0'
+if __name__ == "__main__":
+    host = "0.0.0.0"
     port = 9000
-    created_add = create_app(
-        limiting_req_n=config.LIMITING_REQ_N,
-        limiting_period=config.LIMITING_PERIOD,
-        ip_mask=config.IP_MASK
+    created_app = create_app(
+        limiting_req_n=config.LIMITING_REQ_N, limiting_period=config.LIMITING_PERIOD, ip_mask=config.IP_MASK,
     )
-    httpd = simple_server.make_server(host, port, create_app())
+    httpd = simple_server.make_server(host, port, created_app)
     httpd.serve_forever()

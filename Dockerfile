@@ -7,6 +7,7 @@ COPY requirements.txt /app/requirements.txt
 RUN pip3 install --no-cache-dir -r /app/requirements.txt
 
 COPY app.py /app/app.py
+COPY config.py /app/config.py
 
 EXPOSE 9000
 
